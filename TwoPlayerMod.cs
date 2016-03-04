@@ -788,6 +788,18 @@ public class TwoPlayerMod : Script
                     }
                 }
             }
+            if (input.isPressed(DeviceButton.RightStick))
+            {
+                UI.ShowSubtitle("Going to Player 1");
+                if (player2.IsOnFoot)
+                {
+                    player2.Task.RunTo(player1.GetOffsetInWorldCoords(new Vector3(0, 5, 0)));
+                }
+                else
+                {
+                    player2.Task.DriveTo(player2.CurrentVehicle, player1.GetOffsetInWorldCoords(new Vector3(0, 5, 0)), 5.0f, 10);
+                }
+            }
         }
     }
 
