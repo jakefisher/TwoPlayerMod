@@ -44,7 +44,7 @@ class TwoPlayerMod : Script
     // camera
     public static bool customCamera = false;
     private Camera camera;
-    public enum CameraDirection { South, West, North, East }
+    public enum CameraDirection { South, West, North, East, Southwest, Northwest, Northeast, Southeast }
     public static CameraDirection camDirection = CameraDirection.South;
 
     // players 
@@ -549,10 +549,27 @@ class TwoPlayerMod : Script
                     resetWalking = false;
                 }
 
-
-                //Change camera when Player 1 right stick + RB (unassigned controller) is moved or appropriate numkey is pressed.
-                if (Game.IsControlPressed(0, GTA.Control.Cover))
+                //Change camera orientation based on certain combinations
+                if (Game.IsControlPressed(0, GTA.Control.Cover))//All need cover held
                 {
+                    //Diagonals, direction + 45 degrees, requires RS direction plus stick pressed or approproate numpad
+                    if ((Game.IsControlPressed(0, GTA.Control.LookDownOnly) && Game.IsControlPressed(0, GTA.Control.LookBehind)) || Game.IsKeyPressed(Keys.NumPad1))
+                    {
+                        ChangeCamera(CameraDirection.Southwest);
+                    }
+                    if ((Game.IsControlPressed(0, GTA.Control.LookLeftOnly) && Game.IsControlPressed(0, GTA.Control.LookBehind)) || Game.IsKeyPressed(Keys.NumPad7))
+                    {
+                        ChangeCamera(CameraDirection.Northwest);
+                    }
+                    if ((Game.IsControlPressed(0, GTA.Control.LookUpOnly) && Game.IsControlPressed(0, GTA.Control.LookBehind)) || Game.IsKeyPressed(Keys.NumPad9))
+                    {
+                        ChangeCamera(CameraDirection.Northeast);
+                    }
+                    if ((Game.IsControlPressed(0, GTA.Control.LookRightOnly) && Game.IsControlPressed(0, GTA.Control.LookBehind)) || Game.IsKeyPressed(Keys.NumPad3))
+                    {
+                        ChangeCamera(CameraDirection.Southeast);
+                    }
+                    //Requires RS direction or approproate numpad
                     if (Game.IsControlPressed(0, GTA.Control.LookDownOnly) || Game.IsKeyPressed(Keys.NumPad2))
                     {
                         ChangeCamera(CameraDirection.South);
@@ -570,17 +587,17 @@ class TwoPlayerMod : Script
                         ChangeCamera(CameraDirection.East);
                     }
                 }
-            }
 
-            if (Game.IsControlJustReleased(0, GTA.Control.NextCamera))
-            {
-                customCamera = !customCamera;
-            }
+                if (Game.IsControlJustReleased(0, GTA.Control.NextCamera))
+                {
+                    customCamera = !customCamera;
+                }
 
-            // for letting player get in a vehicle
-            if (player1.IsOnFoot && Game.IsControlJustReleased(0, GTA.Control.VehicleExit))
-            {
-                HandleEnterVehicle(player1);
+                // for letting player get in a vehicle
+                if (player1.IsOnFoot && Game.IsControlJustReleased(0, GTA.Control.VehicleExit))
+                {
+                    HandleEnterVehicle(player1);
+                }
             }
         }
     }
@@ -643,6 +660,28 @@ class TwoPlayerMod : Script
                     center.X -= 5f + (dist / 1.6f);
                     Function.Call(Hash.LOCK_MINIMAP_ANGLE, 270);
                     break;
+
+                case CameraDirection.Southwest:
+                    center.X += 5f + (dist / 1.6f);
+                    center.Y += 5f + (dist / 1.6f);
+                    Function.Call(Hash.LOCK_MINIMAP_ANGLE, 45);
+                    break;
+                case CameraDirection.Northwest:
+                    center.X += 5f + (dist / 1.6f);
+                    center.Y -= 5f + (dist / 1.6f);
+                    Function.Call(Hash.LOCK_MINIMAP_ANGLE, 135);
+                    break;
+                case CameraDirection.Northeast:
+                    center.X -= 5f + (dist / 1.6f);
+                    center.Y -= 5f + (dist / 1.6f);
+                    Function.Call(Hash.LOCK_MINIMAP_ANGLE, 225);
+                    break;
+                case CameraDirection.Southeast:
+                    center.X -= 5f + (dist / 1.6f);
+                    center.Y += 5f + (dist / 1.6f);
+                    Function.Call(Hash.LOCK_MINIMAP_ANGLE, 315);
+                    break;
+
                 default:
                     center.Y += 5f + (dist / 1.6f);
                     Function.Call(Hash.LOCK_MINIMAP_ANGLE, 0);
@@ -673,26 +712,33 @@ class TwoPlayerMod : Script
     /// <param name="offset">Offset prior to remapping</param>
     public static Vector2 AlterInput(Vector2 offset)
     {
-        float temporaryOffset;
         switch (camDirection)
         {
-            case CameraDirection.South:                             //No need to change offset
+            case CameraDirection.South:
                 break;
-            case CameraDirection.West:                             //Switch X and Y, make X negative
-                temporaryOffset = offset.X;
-                offset.X = offset.Y;
-                offset.Y = -temporaryOffset;
+            case CameraDirection.West:
+                offset = RotateAxis(90, offset);
                 break;
-            case CameraDirection.North:                             //Make X and Y negative
-                offset.X = -offset.X;
-                offset.Y = -offset.Y;
+            case CameraDirection.North: 
+                offset = RotateAxis(180, offset);
                 break;
-            case CameraDirection.East:                             //Switch X and Y, make Y negative
-                temporaryOffset = offset.X;
-                offset.X = -offset.Y;
-                offset.Y = temporaryOffset;
+            case CameraDirection.East: 
+                offset = RotateAxis(270, offset);
                 break;
-            default:                                                //Just in case
+
+            case CameraDirection.Southwest:                             
+                offset = RotateAxis(45, offset);
+                break;
+            case CameraDirection.Northwest:                             
+                offset = RotateAxis(135, offset);
+                break;
+            case CameraDirection.Northeast:                             
+                offset = RotateAxis(225, offset);
+                break;
+            case CameraDirection.Southeast:                             
+                offset = RotateAxis(315, offset);
+                break;
+            default:                                                
                 break;
         }
         return offset;
@@ -704,29 +750,66 @@ class TwoPlayerMod : Script
     /// <param name="offset">Offset prior to remapping</param>
     public static Vector3 AlterInput(Vector3 offset)
     {
-        float temporaryOffset;
-        switch (camDirection)
         {
-            case CameraDirection.South:                             //No need to change offset
-                break;
-            case CameraDirection.West:                             //Switch X and Y, make X negative
-                temporaryOffset = offset.X;
-                offset.X = offset.Y;
-                offset.Y = -temporaryOffset;
-                break;
-            case CameraDirection.North:                             //Make X and Y negative
-                offset.X = -offset.X;
-                offset.Y = -offset.Y;
-                break;
-            case CameraDirection.East:                             //Switch X and Y, make Y negative
-                temporaryOffset = offset.X;
-                offset.X = -offset.Y;
-                offset.Y = temporaryOffset;
-                break;
-            default:                                                //Just in case
-                break;
+            switch (camDirection)
+            {
+                case CameraDirection.South:
+                    break;
+                case CameraDirection.West:
+                    offset = RotateAxis(90, offset);
+                    break;
+                case CameraDirection.North:
+                    offset = RotateAxis(180, offset);
+                    break;
+                case CameraDirection.East:
+                    offset = RotateAxis(270, offset);
+                    break;
+
+                case CameraDirection.Southwest:
+                    offset = RotateAxis(45, offset);
+                    break;
+                case CameraDirection.Northwest:
+                    offset = RotateAxis(135, offset);
+                    break;
+                case CameraDirection.Northeast:
+                    offset = RotateAxis(225, offset);
+                    break;
+                case CameraDirection.Southeast:
+                    offset = RotateAxis(315, offset);
+                    break;
+                default:
+                    break;
+            }
+            return offset;
         }
-        return offset;
+    }
+
+    /// <summary>
+    /// Rotates a vector by angle degrees (Vector2)
+    /// </summary>
+    /// <param name="angle">Value in degrees of rotation</param>
+    /// <param name="offset">Vector to rotate</param>
+    /// <returns></returns>
+    public static Vector2 RotateAxis(float angle, Vector2 offset)
+    {
+        double a = -angle * Math.PI / 180.0;
+        float cosa = (float)Math.Cos(a);
+        float sina = (float)Math.Sin(a);
+        return new Vector2(offset.X * cosa - offset.Y * sina, offset.X * sina + offset.Y * cosa);
+    }
+
+    /// <summary>
+    /// Rotates a vector by angle degrees (Vector3)
+    /// </summary>
+    /// <param name="angle">Value in degrees of rotation</param>
+    /// <param name="offset">Vector to rotate</param>
+    /// <returns></returns>
+    public static Vector3 RotateAxis(float angle, Vector3 offset)
+    {
+        double a = -angle * Math.PI / 180.0;
+        float cosa = (float)Math.Cos(a);
+        float sina = (float)Math.Sin(a);
+        return new Vector3(offset.X * cosa - offset.Y * sina, offset.X * sina + offset.Y * cosa,offset.Z);
     }
 
 }
